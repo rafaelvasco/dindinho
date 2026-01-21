@@ -21,6 +21,7 @@ class APIClient:
             base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         self.base_url = base_url
         self.session = requests.Session()
+        print(f"[DEBUG] APIClient initialized with base_url: {self.base_url}")
 
     def _handle_response(self, response: requests.Response) -> Dict:
         """Handle API response and raise errors if needed."""
@@ -35,6 +36,9 @@ class APIClient:
             except:
                 error_detail = str(e)
             raise Exception(f"API Error: {error_detail}")
+        except ValueError as e:
+            # JSON decode error
+            raise Exception(f"Invalid JSON response: {str(e)}. Response text: {response.text[:200]}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Connection Error: {str(e)}")
 
@@ -363,7 +367,12 @@ class APIClient:
 
     def health_check(self) -> Dict:
         """Check API health."""
-        response = self.session.get(f"{self.base_url}/health")
+        url = f"{self.base_url}/health"
+        print(f"[DEBUG] Calling health check: {url}")
+        response = self.session.get(url)
+        print(f"[DEBUG] Health check response status: {response.status_code}")
+        print(f"[DEBUG] Health check response headers: {dict(response.headers)}")
+        print(f"[DEBUG] Health check response text (first 200 chars): {response.text[:200]}")
         return self._handle_response(response)
 
 

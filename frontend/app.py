@@ -1,5 +1,6 @@
 """Main Streamlit application for Finance Analysis."""
 
+import os
 import streamlit as st
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
@@ -7,6 +8,13 @@ from dateutil.relativedelta import relativedelta
 from frontend.utils.api_client import get_api_client
 from frontend.components.month_selector import render_month_selector
 from frontend.components.category_pills import render_category_pills
+
+# Debug: Print environment variables
+print("[DEBUG] Environment variables:")
+print(f"  BACKEND_URL: {os.getenv('BACKEND_URL', 'NOT SET')}")
+print(f"  BACKEND_HOST: {os.getenv('BACKEND_HOST', 'NOT SET')}")
+print(f"  BACKEND_PORT: {os.getenv('BACKEND_PORT', 'NOT SET')}")
+print(f"  ENVIRONMENT: {os.getenv('ENVIRONMENT', 'NOT SET')}")
 
 # Page config
 st.set_page_config(
