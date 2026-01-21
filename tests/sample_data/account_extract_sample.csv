@@ -1,0 +1,16 @@
+Extrato Conta Corrente
+Conta ;31304761
+Período ;01/12/2025 a 31/12/2025
+Saldo: ;6.866,58
+
+Data Lançamento;Descrição;Valor;Saldo
+01/12/2025;Pix enviado: "Cp :90400888-ORGANIZACAO VERDEMAR LTDA";-703,69;1.008,71
+03/12/2025;Pix recebido: "Salário Mensal";5.000,00;6.008,71
+05/12/2025;Débito Conta Energia Elétrica;-456,30;5.552,41
+08/12/2025;Pix enviado: "Aluguel Apartamento";-1.800,00;3.752,41
+10/12/2025;Débito Conta Água e Esgoto;-189,45;3.562,96
+12/12/2025;Pix enviado: "Supermercado Extra";-567,80;2.995,16
+15/12/2025;Débito Conta Internet Fibra;-129,90;2.865,26
+18/12/2025;Pix enviado: "Academia Fitness";-180,00;2.685,26
+20/12/2025;Pix enviado: "Plano de Saúde";-450,00;2.235,26
+22/12/2025;Débito Conta Netflix;-55,90;2.179,36

@@ -1,0 +1,78 @@
+[project]
+name = "finance-ingest"
+version = "0.1.0"
+description = "AI-powered finance analysis application for Brazilian expense tracking"
+authors = [{name = "Rafael Vasco"}]
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+
+dependencies = [
+    "fastapi>=0.119.1",
+    "uvicorn[standard]>=0.32.1",
+    "sqlalchemy>=2.0.45",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.8.0",
+    "python-multipart>=0.0.20",
+    "anthropic>=0.75.0",
+    "python-dotenv>=1.0.1",
+    "pandas>=2.2.3",
+    "numpy>=2.2.1",
+    "streamlit>=1.52.2",
+    "plotly>=5.24.1",
+    "requests>=2.32.3",
+    "python-dateutil>=2.9.0",
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend", "frontend"]
+
+[tool.black]
+line-length = 100
+target-version = ['py314']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+select = ["E", "F", "I", "N", "W", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --cov=backend --cov=frontend --cov-report=html --cov-report=term"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.2",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.28.1",
+    "black>=24.10.0",
+    "ruff>=0.8.4",
+    "mypy>=1.14.0",
+]
