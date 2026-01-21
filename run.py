@@ -20,7 +20,6 @@ def run_backend():
     return subprocess.Popen([
         sys.executable, "-m", "uvicorn",
         "backend.main:app",
-        "--reload",
         "--host", settings.BACKEND_HOST,
         "--port", str(settings.BACKEND_PORT)
     ])
@@ -34,8 +33,7 @@ def run_frontend():
         "run",
         "frontend/app.py",
         "--server.port", str(settings.FRONTEND_PORT),
-        "--server.address", "localhost",
-        "--server.runOnSave", "true"
+        "--server.address", "0.0.0.0"
     ])
 
 
