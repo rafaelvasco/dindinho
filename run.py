@@ -9,6 +9,8 @@ in separate processes and manages their lifecycle.
 import subprocess
 import sys
 import signal
+import time
+import requests
 from pathlib import Path
 
 from backend.config import settings
@@ -58,7 +60,28 @@ def main():
     frontend = None
 
     try:
+        # Start backend first
         backend = run_backend()
+
+        # Wait for backend to be ready
+        print("Waiting for backend to be ready...")
+        backend_ready = False
+        for i in range(30):  # Try for 30 seconds
+            try:
+                response = requests.get(f"http://localhost:{settings.BACKEND_PORT}/health", timeout=1)
+                if response.status_code == 200:
+                    backend_ready = True
+                    print("✓ Backend is ready!")
+                    break
+            except:
+                pass
+            time.sleep(1)
+
+        if not backend_ready:
+            print("ERROR: Backend failed to start in time")
+            raise Exception("Backend startup timeout")
+
+        # Now start frontend
         frontend = run_frontend()
 
         print()
