@@ -10,6 +10,7 @@ from backend.database import get_db
 from backend.services.database_export_service import DatabaseExportService
 from backend.services.database_import_service import DatabaseImportService
 from backend.services.backup_service import BackupService
+from backend.services.database_clear_service import DatabaseClearService
 from backend.schemas.database_export import (
     ImportPreview,
     ImportRequest,
@@ -17,7 +18,9 @@ from backend.schemas.database_export import (
     BackupListResponse,
     BackupCreateResponse,
     BackupRestoreRequest,
-    BackupRestoreResponse
+    BackupRestoreResponse,
+    ClearDatabaseRequest,
+    ClearDatabaseResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -195,3 +198,57 @@ async def restore_backup(request: BackupRestoreRequest) -> BackupRestoreResponse
     except Exception as e:
         logger.error(f"Database restore failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Restore failed: {str(e)}")
+
+
+@router.post("/clear", response_model=ClearDatabaseResponse)
+async def clear_database(
+    request: ClearDatabaseRequest,
+    db: Session = Depends(get_db)
+) -> ClearDatabaseResponse:
+    """
+    Clear all data from the database.
+
+    **DANGER:** This operation deletes all data from all tables.
+    A backup is strongly recommended before proceeding.
+
+    Args:
+        request: Clear request with confirmation and backup option
+        db: Database session
+
+    Returns:
+        ClearDatabaseResponse with result
+    """
+    # Require exact confirmation text
+    if request.confirmation_text != "DELETE ALL DATA":
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid confirmation text. You must type 'DELETE ALL DATA' exactly."
+        )
+
+    backup_file = None
+
+    try:
+        # Create backup before clearing if requested
+        if request.create_backup:
+            logger.info("Creating backup before clearing database")
+            backup_service = BackupService()
+            backup_file = backup_service.create_backup()
+            logger.info(f"Backup created: {backup_file}")
+
+        # Clear database
+        logger.warning("CLEARING ALL DATABASE DATA")
+        records_deleted = DatabaseClearService.clear_all_data(db)
+        logger.info(f"Database cleared: {records_deleted}")
+
+        total_deleted = sum(records_deleted.values())
+
+        return ClearDatabaseResponse(
+            success=True,
+            message=f"Database cleared successfully. {total_deleted} records deleted.",
+            backup_file=backup_file,
+            records_deleted=records_deleted
+        )
+
+    except Exception as e:
+        logger.error(f"Database clear failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Clear failed: {str(e)}")

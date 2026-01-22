@@ -73,7 +73,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; padding: 1rem; color: #666;'>
-        <small>Dindinho v0.1.0</small><br>
+        <small>Dindinho v0.1.3</small><br>
         <small>Powered by Claude AI</small>
     </div>
     """, unsafe_allow_html=True)

@@ -423,6 +423,17 @@ class APIClient:
         )
         return self._handle_response(response)
 
+    def clear_database(self, confirmation_text: str, create_backup: bool = True) -> Dict:
+        """Clear all database data (DANGEROUS operation)."""
+        response = self.session.post(
+            f"{self.base_url}/api/database/clear",
+            json={
+                "confirmation_text": confirmation_text,
+                "create_backup": create_backup
+            }
+        )
+        return self._handle_response(response)
+
     def health_check(self) -> Dict:
         """Check API health."""
         url = f"{self.base_url}/health"

@@ -95,3 +95,19 @@ class BackupRestoreResponse(BaseModel):
 
     success: bool = Field(..., description="Whether restore was successful")
     message: str = Field(..., description="Success or error message")
+
+
+class ClearDatabaseRequest(BaseModel):
+    """Request to clear all database data."""
+
+    create_backup: bool = Field(default=True, description="Whether to create backup before clearing")
+    confirmation_text: str = Field(..., description="User must type confirmation text to proceed")
+
+
+class ClearDatabaseResponse(BaseModel):
+    """Response after clearing database."""
+
+    success: bool = Field(..., description="Whether clear was successful")
+    message: str = Field(..., description="Success or error message")
+    backup_file: Optional[str] = Field(None, description="Path to backup file if created")
+    records_deleted: Dict[str, int] = Field(default_factory=dict, description="Number of records deleted per table")

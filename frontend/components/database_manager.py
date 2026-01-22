@@ -36,6 +36,17 @@ def render_database_manager(api):
                     with st.spinner("Exporting database..."):
                         export_data = api.export_database()
 
+                    # Show summary first
+                    metadata = export_data.get("metadata", {})
+                    st.success(
+                        f"✅ **Database exported successfully!**\n\n"
+                        f"📊 **Export Summary:**\n"
+                        f"- {metadata.get('total_transactions', 0)} transactions\n"
+                        f"- {metadata.get('total_categories', 0)} categories\n"
+                        f"- {metadata.get('total_subscriptions', 0)} subscriptions\n"
+                        f"- {metadata.get('total_income_sources', 0)} income sources"
+                    )
+
                     # Create download button
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     filename = f"dindinho_export_{timestamp}.json"
@@ -48,16 +59,7 @@ def render_database_manager(api):
                         use_container_width=True
                     )
 
-                    # Show summary
-                    metadata = export_data.get("metadata", {})
-                    st.success("Database exported successfully!")
-                    st.info(
-                        f"**Export Summary:**\n\n"
-                        f"- Transactions: {metadata.get('total_transactions', 0)}\n"
-                        f"- Categories: {metadata.get('total_categories', 0)}\n"
-                        f"- Subscriptions: {metadata.get('total_subscriptions', 0)}\n"
-                        f"- Income Sources: {metadata.get('total_income_sources', 0)}"
-                    )
+                    st.info("💡 **Tip:** Save this file securely. You can use it to import data into another environment.")
 
                 except Exception as e:
                     st.error(f"Export failed: {str(e)}")
@@ -143,13 +145,23 @@ def render_database_manager(api):
                                     )
 
                                 if result.get("success"):
-                                    st.success("Import completed successfully!")
-
                                     # Show import statistics
                                     imported = result.get("imported", {})
                                     skipped = result.get("skipped", {})
 
-                                    with st.expander("📈 Import Results", expanded=True):
+                                    total_imported = sum(imported.values())
+                                    total_skipped = sum(skipped.values())
+
+                                    # Clear, prominent success message with summary
+                                    st.success(
+                                        f"✅ **Import completed successfully!**\n\n"
+                                        f"📊 **Summary:**\n"
+                                        f"- {total_imported} records imported\n"
+                                        f"- {total_skipped} duplicates skipped"
+                                    )
+
+                                    # Show detailed breakdown
+                                    with st.expander("📈 Detailed Import Results", expanded=False):
                                         result_data = []
                                         for table_name in set(list(imported.keys()) + list(skipped.keys())):
                                             display_name = table_name.replace("_", " ").title()
@@ -162,10 +174,11 @@ def render_database_manager(api):
                                         st.table(result_data)
 
                                     if result.get("backup_file"):
-                                        st.info(f"Backup created: {result.get('backup_file')}")
+                                        st.info(f"💾 Backup created: {result.get('backup_file')}")
 
-                                    # Force page refresh to show new data
-                                    st.rerun()
+                                    # Show button to refresh and see new data
+                                    if st.button("🔄 Refresh Page to See New Data", type="primary", use_container_width=True):
+                                        st.rerun()
                                 else:
                                     st.error("Import failed!")
                                     errors = result.get("errors", [])
@@ -198,9 +211,15 @@ def render_database_manager(api):
                         result = api.create_backup()
 
                     if result.get("success"):
-                        st.success(result.get("message", "Backup created successfully!"))
-                        st.info(f"Backup file: {result.get('backup_file')}")
-                        st.rerun()  # Refresh to show new backup in list
+                        st.success(
+                            f"✅ **Backup created successfully!**\n\n"
+                            f"💾 {result.get('backup_file')}"
+                        )
+                        st.info("💡 **Tip:** Backups are stored in `data/backups/` directory")
+
+                        # Show button to refresh backup list
+                        if st.button("🔄 Refresh Backup List", use_container_width=True):
+                            st.rerun()
                     else:
                         st.error("Backup creation failed!")
 
@@ -263,10 +282,19 @@ def render_database_manager(api):
                                                 result = api.restore_backup(backup.get("filename"))
 
                                             if result.get("success"):
-                                                st.success(result.get("message", "Backup restored successfully!"))
+                                                st.success(
+                                                    f"✅ **Database restored successfully!**\n\n"
+                                                    f"Your database has been restored from:\n"
+                                                    f"💾 {backup.get('filename')}"
+                                                )
+                                                st.info("💡 **Note:** The application will reload to reflect the restored data")
+
                                                 # Clear confirmation state
                                                 del st.session_state[f"confirm_restore_{backup.get('filename')}"]
-                                                st.rerun()
+
+                                                # Show button to reload
+                                                if st.button("🔄 Reload Application", type="primary", use_container_width=True):
+                                                    st.rerun()
                                             else:
                                                 st.error("Restore failed!")
 
@@ -284,3 +312,114 @@ def render_database_manager(api):
 
         except Exception as e:
             st.error(f"Failed to load backups: {str(e)}")
+
+    # Dangerous Operations Section
+    st.markdown("---")
+    st.markdown("---")
+    st.markdown("## ⚠️ Dangerous Operations")
+
+    with st.expander("🗑️ Clear Database (Delete All Data)", expanded=False):
+        st.error(
+            "**⚠️ DANGER: This operation will permanently delete ALL data from your database!**\n\n"
+            "This includes:\n"
+            "- All transactions\n"
+            "- All subscriptions\n"
+            "- All income sources\n"
+            "- All ignored patterns\n"
+            "- All name mappings\n\n"
+            "**This action cannot be undone!**"
+        )
+
+        st.markdown("---")
+
+        # Initialize session state for clear database flow
+        if "clear_db_step" not in st.session_state:
+            st.session_state.clear_db_step = 0
+
+        if st.session_state.clear_db_step == 0:
+            # Step 1: Initial warning
+            st.warning("Before proceeding, make sure you have a recent backup of your data.")
+
+            create_backup_before_clear = st.checkbox(
+                "Create automatic backup before clearing",
+                value=True,
+                help="Strongly recommended: Create a backup before deleting all data",
+                key="clear_db_create_backup"
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🗑️ Proceed to Confirmation", type="primary", use_container_width=True):
+                    st.session_state.clear_db_step = 1
+                    st.rerun()
+
+            with col2:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.clear_db_step = 0
+                    st.rerun()
+
+        elif st.session_state.clear_db_step == 1:
+            # Step 2: Type confirmation text
+            st.error("**FINAL WARNING:** You are about to delete all data!")
+
+            st.markdown("To confirm, please type the following text exactly:")
+            st.code("DELETE ALL DATA", language=None)
+
+            confirmation_text = st.text_input(
+                "Type confirmation text:",
+                key="clear_db_confirmation_text",
+                placeholder="DELETE ALL DATA"
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🗑️ Clear Database Now", type="primary", use_container_width=True):
+                    if confirmation_text == "DELETE ALL DATA":
+                        # Proceed with clearing
+                        try:
+                            with st.spinner("Clearing database..."):
+                                result = api.clear_database(
+                                    confirmation_text=confirmation_text,
+                                    create_backup=st.session_state.get("clear_db_create_backup", True)
+                                )
+
+                            if result.get("success"):
+                                records_deleted = result.get("records_deleted", {})
+                                total_deleted = sum(records_deleted.values())
+
+                                st.success(
+                                    f"✅ **Database cleared successfully!**\n\n"
+                                    f"📊 **Summary:**\n"
+                                    f"- {total_deleted} total records deleted"
+                                )
+
+                                if result.get("backup_file"):
+                                    st.info(f"💾 Backup created: {result.get('backup_file')}")
+
+                                # Show detailed breakdown
+                                with st.expander("📈 Detailed Deletion Results", expanded=False):
+                                    for table_name, count in records_deleted.items():
+                                        display_name = table_name.replace("_", " ").title()
+                                        st.write(f"- **{display_name}**: {count} records")
+
+                                st.warning("💡 **Note:** The application will reload to reflect the cleared database")
+
+                                # Reset step
+                                st.session_state.clear_db_step = 0
+
+                                # Show button to reload
+                                if st.button("🔄 Reload Application", type="primary", use_container_width=True):
+                                    st.rerun()
+                            else:
+                                st.error("Database clear failed!")
+
+                        except Exception as e:
+                            st.error(f"Clear failed: {str(e)}")
+                            st.session_state.clear_db_step = 0
+                    else:
+                        st.error("❌ Confirmation text does not match. Please type 'DELETE ALL DATA' exactly.")
+
+            with col2:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.clear_db_step = 0
+                    st.rerun()
