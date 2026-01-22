@@ -494,8 +494,18 @@ elif selected_tab == 6:
 
 # Tab 7: Settings
 elif selected_tab == 7:
+    from frontend.components.database_manager import render_database_manager
     from frontend.components.ignore_list_manager import show_ignore_list_manager
 
+    # Database Management Section
+    st.markdown("## 📦 Database Management")
+    st.info("Export/import your database or manage backups. Use this to merge data between environments.")
+
+    render_database_manager(api)
+
+    st.markdown("---")
+
+    # Ignore List Management Section
     st.markdown("### 🚫 Ignore List Management")
     st.info("Transações com esses nomes/descrições serão automaticamente ignoradas durante a importação.")
 

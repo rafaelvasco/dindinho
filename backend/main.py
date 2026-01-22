@@ -109,7 +109,7 @@ async def root():
 
 # Import and include API routers
 # Note: Import here to avoid circular imports
-from backend.api import upload, transactions, subscriptions, reports, categories, income_sources
+from backend.api import upload, transactions, subscriptions, reports, categories, income_sources, database
 
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
@@ -117,5 +117,6 @@ app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["sub
 app.include_router(income_sources.router, prefix="/api/income-sources", tags=["income-sources"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
+app.include_router(database.router, prefix="/api/database", tags=["database"])
 
 logger.info("API routers registered successfully")

@@ -21,6 +21,20 @@ class APIClient:
             base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         self.base_url = base_url
         self.session = requests.Session()
+
+        # Add Cloudflare Access service token headers if configured
+        cf_client_id = os.getenv("CF_ACCESS_CLIENT_ID")
+        cf_client_secret = os.getenv("CF_ACCESS_CLIENT_SECRET")
+
+        if cf_client_id and cf_client_secret:
+            self.session.headers.update({
+                "CF-Access-Client-Id": cf_client_id,
+                "CF-Access-Client-Secret": cf_client_secret
+            })
+            print(f"[DEBUG] Cloudflare Access service token configured")
+        else:
+            print(f"[DEBUG] No Cloudflare Access service token configured")
+
         print(f"[DEBUG] APIClient initialized with base_url: {self.base_url}")
 
     def _handle_response(self, response: requests.Response) -> Dict:
@@ -362,6 +376,50 @@ class APIClient:
         response = self.session.patch(
             f"{self.base_url}/api/categories/{category_id}",
             json=update_data
+        )
+        return self._handle_response(response)
+
+    # Database export/import endpoints
+    def export_database(self) -> Dict:
+        """Export entire database to JSON format."""
+        response = self.session.post(f"{self.base_url}/api/database/export")
+        return self._handle_response(response)
+
+    def preview_database_import(self, data: Dict) -> Dict:
+        """Preview database import to see conflicts."""
+        response = self.session.post(
+            f"{self.base_url}/api/database/import/preview",
+            json=data
+        )
+        return self._handle_response(response)
+
+    def execute_database_import(self, data: Dict, create_backup: bool = True) -> Dict:
+        """Execute database import with skip duplicates strategy."""
+        request = {
+            "data": data,
+            "create_backup": create_backup
+        }
+        response = self.session.post(
+            f"{self.base_url}/api/database/import/execute",
+            json=request
+        )
+        return self._handle_response(response)
+
+    def create_backup(self) -> Dict:
+        """Create a manual database backup."""
+        response = self.session.post(f"{self.base_url}/api/database/backup/create")
+        return self._handle_response(response)
+
+    def list_backups(self) -> List[Dict]:
+        """List all available database backups."""
+        response = self.session.get(f"{self.base_url}/api/database/backup/list")
+        return self._handle_response(response)
+
+    def restore_backup(self, backup_file: str) -> Dict:
+        """Restore database from a backup file."""
+        response = self.session.post(
+            f"{self.base_url}/api/database/backup/restore",
+            json={"backup_file": backup_file}
         )
         return self._handle_response(response)
 
