@@ -141,7 +141,7 @@ async def get_biggest_transactions(
             description=txn.description,
             amount=txn.amount,
             category=txn.category.name if txn.category else "Unknown",
-            transaction_type=txn.transaction_type
+            transaction_type=txn.transaction_type.value if txn.transaction_type else None
         )
         for txn in transactions
     ]
@@ -180,7 +180,7 @@ async def get_biggest_transactions_by_category(
                 description=txn.description,
                 amount=txn.amount,
                 category=txn.category.name if txn.category else "Unknown",
-                transaction_type=txn.transaction_type
+                transaction_type=txn.transaction_type.value if txn.transaction_type else None
             )
         )
         for cat, txn in category_max.items()

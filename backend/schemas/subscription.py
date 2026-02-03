@@ -17,7 +17,7 @@ class SubscriptionBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255, description="Subscription name")
     description: Optional[str] = Field(None, description="Subscription description")
-    pattern: str = Field(..., min_length=1, description="Exact description pattern for matching")
+    pattern: Optional[str] = Field(None, min_length=1, description="Exact description pattern for matching")
 
 
 class SubscriptionCreate(SubscriptionBase):

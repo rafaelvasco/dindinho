@@ -5,7 +5,7 @@ from datetime import date
 from typing import Optional
 
 
-def show_top_transactions(api, start_date: Optional[date] = None, end_date: Optional[date] = None, category: Optional[str] = None, limit: int = 10, transaction_type: Optional[str] = None, title: str = None):
+def show_top_transactions(api, start_date: Optional[date] = None, end_date: Optional[date] = None, category: Optional[str] = None, limit: int = 10, transaction_type: Optional[str] = None, title: Optional[str] = None):
     """Display top N biggest transactions."""
     if title is None:
         title = f"### 🏆 {limit} Maiores Transações"

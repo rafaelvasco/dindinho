@@ -1,12 +1,14 @@
 """Subscription model for tracking recurring transactions."""
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from typing import List, Tuple
-from datetime import date
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from datetime import datetime, date
+from typing import List, Tuple, Optional, TYPE_CHECKING
 
 from backend.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.transaction import Transaction
 
 
 class Subscription(Base):
@@ -21,26 +23,26 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     # Subscription details
-    name = Column(String, nullable=False, unique=True, index=True)
-    description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Current value (denormalized for performance)
-    current_value = Column(Float, nullable=False)
-    currency = Column(String, default="BRL", nullable=False)
+    current_value: Mapped[float] = mapped_column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(String, default="BRL", nullable=False)
 
     # Pattern for auto-matching transactions (exact description match)
-    pattern = Column(String, nullable=True)
+    pattern: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationship to transactions (ordered by date)
-    transactions = relationship(
+    transactions: Mapped[list["Transaction"]] = relationship(
         "Transaction",
         back_populates="subscription",
         order_by="Transaction.date",

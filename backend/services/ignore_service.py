@@ -64,11 +64,12 @@ class IgnoreService:
         # Find best fuzzy match
         for rule in fuzzy_rules:
             similarity = fuzz.ratio(description, rule.description)
+            threshold = rule.fuzzy_threshold if rule.fuzzy_threshold is not None else 70.0
 
-            if similarity >= rule.fuzzy_threshold:
+            if similarity >= threshold:
                 logger.info(
                     f"Fuzzy ignore match: '{description}' matches rule '{rule.description}' "
-                    f"(score: {similarity:.1f}, threshold: {rule.fuzzy_threshold})"
+                    f"(score: {similarity:.1f}, threshold: {threshold})"
                 )
                 return (True, rule)
 

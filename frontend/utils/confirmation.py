@@ -1,7 +1,7 @@
 """Reusable confirmation dialog utilities for Streamlit."""
 
 import streamlit as st
-from typing import Callable
+from typing import Callable, Optional
 
 
 class ConfirmationDialog:
@@ -12,7 +12,7 @@ class ConfirmationDialog:
         item_name: str,
         on_confirm: Callable,
         title: str = "Confirm Deletion",
-        message: str = None,
+        message: Optional[str] = None,
         confirm_label: str = "Delete",
         cancel_label: str = "Cancel"
     ):

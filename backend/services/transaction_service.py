@@ -38,7 +38,7 @@ class TransactionService:
     5. Store in database
     """
 
-    def __init__(self, db: Session, ai_categorizer: AICategorizer = None):
+    def __init__(self, db: Session, ai_categorizer: Optional[AICategorizer] = None):
         """
         Initialize transaction service.
 

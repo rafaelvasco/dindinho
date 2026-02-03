@@ -1,7 +1,9 @@
 """Ignored transaction model for storing transaction descriptions to skip during import."""
 
 from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
+from typing import Optional
 
 from backend.database import Base
 
@@ -18,19 +20,19 @@ class IgnoredTransaction(Base):
     __tablename__ = "ignored_transactions"
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     # Transaction description to ignore (must be unique)
-    description = Column(String, nullable=False, unique=True, index=True)
+    description: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
 
     # Fuzzy matching threshold (0-100). If None, use exact matching only.
-    fuzzy_threshold = Column(Float, default=70.0, nullable=True)
+    fuzzy_threshold: Mapped[Optional[float]] = mapped_column(Float, default=70.0, nullable=True)
 
     # How many times this ignore rule has been used
-    usage_count = Column(Integer, default=0, nullable=False)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self) -> str:
         """String representation of the ignored transaction."""

@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.api_client import get_api_client
+from utils.api_client import get_api_client  # type: ignore[import-untyped]
 
 
 def render_category_pills():

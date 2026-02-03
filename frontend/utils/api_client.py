@@ -37,7 +37,7 @@ class APIClient:
 
         print(f"[DEBUG] APIClient initialized with base_url: {self.base_url}")
 
-    def _handle_response(self, response: requests.Response) -> Dict:
+    def _handle_response(self, response: requests.Response) -> Any:
         """Handle API response and raise errors if needed."""
         try:
             response.raise_for_status()

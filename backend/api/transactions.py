@@ -168,7 +168,7 @@ async def get_transaction(
         original_category=transaction.original_category,
         category=transaction.category.name if transaction.category else "Unknown",
         category_id=transaction.category_id,
-        transaction_type=transaction.transaction_type.value if transaction.transaction_type else None,
+        transaction_type=transaction.transaction_type.value,
         source_type=transaction.source_type,
         source_file=transaction.source_file,
         subscription_id=transaction.subscription_id,
@@ -205,6 +205,8 @@ async def update_transaction(
     if transaction_update.category is not None:
         try:
             transaction = transaction_service.update_transaction_category(transaction_id, transaction_update.category)
+            if not transaction:
+                raise HTTPException(status_code=404, detail="Transaction not found")
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
@@ -260,7 +262,7 @@ async def update_transaction(
         original_category=transaction.original_category,
         category=transaction.category.name if transaction.category else "Unknown",
         category_id=transaction.category_id,
-        transaction_type=transaction.transaction_type.value if transaction.transaction_type else None,
+        transaction_type=transaction.transaction_type.value,
         source_type=transaction.source_type,
         source_file=transaction.source_file,
         subscription_id=transaction.subscription_id,

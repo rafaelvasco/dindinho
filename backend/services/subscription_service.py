@@ -35,7 +35,7 @@ class SubscriptionService:
     def create_subscription(
         self,
         name: str,
-        pattern: str,
+        pattern: Optional[str] = None,
         description: Optional[str] = None,
         initial_value: float = 0.0
     ) -> Subscription:
@@ -183,7 +183,7 @@ class SubscriptionService:
         self,
         transaction_id: int,
         subscription_id: int
-    ) -> Optional[Tuple[Transaction, Subscription]]:
+    ) -> Tuple[Transaction, Subscription]:
         """
         Link a transaction to a subscription and update subscription's current_value.
 

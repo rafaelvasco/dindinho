@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 from anthropic import Anthropic
 from backend.config import settings
 from backend.models.category import TransactionCategory
@@ -18,7 +18,7 @@ class AICategorizer:
     Brazilian transaction categories.
     """
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the AI categorizer.
 

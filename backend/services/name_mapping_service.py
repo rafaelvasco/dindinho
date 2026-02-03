@@ -32,7 +32,7 @@ class NameMappingService:
         """
         self.db = db
 
-    def find_suggestion(self, description: str, threshold: float = None) -> Optional[str]:
+    def find_suggestion(self, description: str, threshold: Optional[float] = None) -> Optional[str]:
         """
         Find a suggested mapped name for a description using fuzzy matching.
 
@@ -82,7 +82,7 @@ class NameMappingService:
     def find_suggestion_with_details(
         self,
         description: str,
-        threshold: float = None
+        threshold: Optional[float] = None
     ) -> Optional[Tuple[str, NameMapping, float]]:
         """
         Find a suggested mapped name with detailed match information.
@@ -134,7 +134,7 @@ class NameMappingService:
         self,
         original_description: str,
         mapped_name: str,
-        threshold: float = None
+        threshold: Optional[float] = None
     ) -> NameMapping:
         """
         Create a new mapping or update existing one if similar pattern exists.

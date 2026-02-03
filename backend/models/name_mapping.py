@@ -1,6 +1,7 @@
 """Name mapping model for fuzzy matching and auto-renaming expense descriptions."""
 
 from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
 from backend.database import Base
@@ -18,23 +19,23 @@ class NameMapping(Base):
     __tablename__ = "name_mappings"
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     # Original pattern from expense description
-    pattern = Column(String, nullable=False, index=True)
+    pattern: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     # Mapped/renamed value
-    mapped_name = Column(String, nullable=False, index=True)
+    mapped_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     # Fuzzy matching threshold (0-100)
-    fuzzy_threshold = Column(Float, default=70.0, nullable=False)
+    fuzzy_threshold: Mapped[float] = mapped_column(Float, default=70.0, nullable=False)
 
     # How many times this mapping has been used
-    usage_count = Column(Integer, default=0, nullable=False)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     def __repr__(self) -> str:
         """String representation of the name mapping."""

@@ -316,14 +316,11 @@ class DatabaseImportService:
                     continue
 
                 old_id = item.pop("id")
-                category = Category(**{
-                    k: v for k, v in item.items()
-                    if k in ["name", "created_at", "updated_at"]
-                })
+                category = Category(name=item["name"])
                 if item.get("created_at"):
-                    category.created_at = DatabaseImportService._parse_datetime(item["created_at"])
+                    category.created_at = DatabaseImportService._parse_datetime(item["created_at"])  # type: ignore[misc]
                 if item.get("updated_at"):
-                    category.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])
+                    category.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])  # type: ignore[misc]
 
                 db.add(category)
                 db.flush()
@@ -357,9 +354,9 @@ class DatabaseImportService:
                     pattern=item.get("pattern")
                 )
                 if item.get("created_at"):
-                    subscription.created_at = DatabaseImportService._parse_datetime(item["created_at"])
+                    subscription.created_at = DatabaseImportService._parse_datetime(item["created_at"])  # type: ignore[misc]
                 if item.get("updated_at"):
-                    subscription.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])
+                    subscription.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])  # type: ignore[misc]
 
                 db.add(subscription)
                 db.flush()
@@ -394,9 +391,9 @@ class DatabaseImportService:
                     currency=item.get("currency", "BRL")
                 )
                 if item.get("created_at"):
-                    income_source.created_at = DatabaseImportService._parse_datetime(item["created_at"])
+                    income_source.created_at = DatabaseImportService._parse_datetime(item["created_at"])  # type: ignore[misc]
                 if item.get("updated_at"):
-                    income_source.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])
+                    income_source.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])  # type: ignore[misc]
 
                 db.add(income_source)
                 db.flush()
@@ -466,9 +463,9 @@ class DatabaseImportService:
                     income_source_id=new_income_source_id
                 )
                 if item.get("created_at"):
-                    transaction.created_at = DatabaseImportService._parse_datetime(item["created_at"])
+                    transaction.created_at = DatabaseImportService._parse_datetime(item["created_at"])  # type: ignore[misc]
                 if item.get("updated_at"):
-                    transaction.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])
+                    transaction.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])  # type: ignore[misc]
 
                 db.add(transaction)
 
@@ -489,7 +486,7 @@ class DatabaseImportService:
                     usage_count=item.get("usage_count", 0)
                 )
                 if item.get("created_at"):
-                    ignored.created_at = DatabaseImportService._parse_datetime(item["created_at"])
+                    ignored.created_at = DatabaseImportService._parse_datetime(item["created_at"])  # type: ignore[misc]
 
                 db.add(ignored)
 
@@ -511,9 +508,9 @@ class DatabaseImportService:
                     usage_count=item.get("usage_count", 0)
                 )
                 if item.get("created_at"):
-                    mapping.created_at = DatabaseImportService._parse_datetime(item["created_at"])
+                    mapping.created_at = DatabaseImportService._parse_datetime(item["created_at"])  # type: ignore[misc]
                 if item.get("updated_at"):
-                    mapping.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])
+                    mapping.updated_at = DatabaseImportService._parse_datetime(item["updated_at"])  # type: ignore[misc]
 
                 db.add(mapping)
 

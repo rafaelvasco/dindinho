@@ -2,6 +2,7 @@
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -11,7 +12,7 @@ class Settings(BaseSettings):
     DATABASE_PATH: str = "./data/finance.db"
 
     # Anthropic API
-    ANTHROPIC_API_KEY: str
+    ANTHROPIC_API_KEY: Optional[str] = None
 
     # Backend
     BACKEND_HOST: str = "0.0.0.0"

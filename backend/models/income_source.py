@@ -1,12 +1,15 @@
 """Income source model for tracking expected recurring income."""
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, TYPE_CHECKING
 from datetime import date
 
 from backend.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.transaction import Transaction
 
 
 class IncomeSource(Base):
@@ -21,29 +24,29 @@ class IncomeSource(Base):
     __tablename__ = "income_sources"
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     # Income source details
-    name = Column(String, nullable=False, unique=True, index=True)
-    cnpj = Column(String, nullable=True)  # Brazilian tax ID (14 digits)
-    description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    cnpj: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Brazilian tax ID (14 digits)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Current expected amount (denormalized for performance)
-    current_expected_amount = Column(Float, nullable=False)
-    currency = Column(String, default="BRL", nullable=False)
+    current_expected_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(String, default="BRL", nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    transactions = relationship(
+    transactions: Mapped[list["Transaction"]] = relationship(
         "Transaction",
         back_populates="income_source",
         order_by="Transaction.date"
     )
-    history = relationship(
+    history: Mapped[list["IncomeSourceHistory"]] = relationship(
         "IncomeSourceHistory",
         back_populates="income_source",
         order_by="IncomeSourceHistory.effective_date.desc()",
@@ -125,18 +128,18 @@ class IncomeSourceHistory(Base):
     __tablename__ = "income_source_history"
 
     # Primary key
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     # Foreign key to income source
-    income_source_id = Column(Integer, ForeignKey("income_sources.id"), nullable=False, index=True)
+    income_source_id: Mapped[int] = mapped_column(Integer, ForeignKey("income_sources.id"), nullable=False, index=True)
 
     # Historical data
-    expected_amount = Column(Float, nullable=False)
-    effective_date = Column(DateTime, default=datetime.utcnow, nullable=False)
-    note = Column(String, nullable=True)  # Optional note explaining the change
+    expected_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    effective_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    note: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Optional note explaining the change
 
     # Relationship
-    income_source = relationship("IncomeSource", back_populates="history")
+    income_source: Mapped["IncomeSource"] = relationship("IncomeSource", back_populates="history")
 
     def __repr__(self) -> str:
         """String representation of the history entry."""

@@ -2,9 +2,13 @@
 
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.transaction import Transaction
 
 
 class TransactionCategory(str, Enum):
@@ -56,12 +60,12 @@ class Category(Base):
 
     __tablename__ = "categories"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    transactions = relationship("Transaction", back_populates="category")
+    transactions: Mapped[list["Transaction"]] = relationship("Transaction", back_populates="category")
 
     def __repr__(self) -> str:
         return f"<Category(id={self.id}, name='{self.name}')>"
