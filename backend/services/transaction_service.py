@@ -96,7 +96,8 @@ class TransactionService:
                 transaction_data['description'],
                 transaction_data['amount']
             )
-            is_duplicate = signature in existing_transactions
+            existing_transaction_id = existing_transactions.get(signature)
+            is_duplicate = existing_transaction_id is not None
             if is_duplicate:
                 duplicate_count += 1
 
@@ -116,6 +117,7 @@ class TransactionService:
                 source_type=source_type,
                 is_ignored=should_ignore,
                 is_duplicate=is_duplicate,
+                existing_transaction_id=existing_transaction_id,
                 suggested_name=suggested_name
             )
             preview_items.append(preview_item)
@@ -147,6 +149,7 @@ class TransactionService:
         ignored_once_count = 0
         ignored_always_count = 0
         subscriptions_created = 0
+        overwritten_count = 0
         errors = []
 
         # Group actions by type
@@ -156,6 +159,7 @@ class TransactionService:
         items_to_categorize = []  # Only regular imports need AI categorization
         items_to_import_data = []  # All items to import (with or without AI categorization)
         subscription_items = []  # Items marked as subscription (skip AI)
+        overwrite_items = []  # Items marked for overwrite (need AI categorization)
 
         # Track descriptions already added to ignore list in this batch
         ignored_in_batch = set()
@@ -208,19 +212,35 @@ class TransactionService:
                     items_to_categorize.append(final_description)
                     items_to_import_data.append((item, action, final_description))
 
+                elif action.action == "overwrite":
+                    # Overwrite existing transaction: needs AI categorization
+                    if item.existing_transaction_id:
+                        items_to_categorize.append(final_description)
+                        overwrite_items.append((item, action, final_description))
+                        logger.debug(f"Overwrite marked (needs AI categorization): {final_description}")
+                    else:
+                        error_msg = f"Cannot overwrite item {item.index}: no existing transaction ID"
+                        logger.error(error_msg)
+                        errors.append(error_msg)
+
             except Exception as e:
                 error_msg = f"Error processing item {item.index}: {e}"
                 logger.error(error_msg)
                 errors.append(error_msg)
 
-        # Batch categorize regular import items (not subscriptions)
+        # Batch categorize items that need AI categorization (imports + overwrites)
         categories = []
         if items_to_categorize:
             logger.info(f"Categorizing {len(items_to_categorize)} items with AI")
             categories = self.ai_categorizer.categorize_batch(items_to_categorize)
 
+        # Split categories between import items and overwrite items
+        # (they were added to items_to_categorize in order: imports first, then overwrites)
+        import_categories = categories[:len(items_to_import_data)]
+        overwrite_categories = categories[len(items_to_import_data):]
+
         # Process regular imports with AI categorization
-        for (item, action, final_description), category_name in zip(items_to_import_data, categories):
+        for (item, action, final_description), category_name in zip(items_to_import_data, import_categories):
             try:
                 # Regular import: use AI category
                 category = self.category_service.find_or_create_category(category_name)
@@ -286,11 +306,39 @@ class TransactionService:
                 logger.error(error_msg)
                 errors.append(error_msg)
 
+        # Process overwrite items with AI categorization
+        for (item, action, final_description), category_name in zip(overwrite_items, overwrite_categories):
+            try:
+                # Find or create category
+                category = self.category_service.find_or_create_category(category_name)
+                category_id = category.id
+
+                # Overwrite existing transaction
+                transaction = self._overwrite_transaction(
+                    existing_id=item.existing_transaction_id,
+                    item=item,
+                    final_description=final_description,
+                    category_id=category_id,
+                    source_file=import_request.source_file
+                )
+
+                if transaction:
+                    overwritten_count += 1
+                else:
+                    error_msg = f"Failed to overwrite transaction {item.existing_transaction_id}"
+                    errors.append(error_msg)
+
+            except Exception as e:
+                error_msg = f"Error overwriting item {item.index} ({final_description}): {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+
         # Commit all changes
         try:
             self.db.commit()
             logger.info(f"Import completed: {imported_count} imported, "
-                       f"{subscriptions_created} subscriptions created")
+                       f"{subscriptions_created} subscriptions created, "
+                       f"{overwritten_count} overwritten")
         except Exception as e:
             self.db.rollback()
             error_msg = f"Error committing to database: {e}"
@@ -303,6 +351,7 @@ class TransactionService:
             ignored_once_count=ignored_once_count,
             ignored_always_count=ignored_always_count,
             subscriptions_created=subscriptions_created,
+            overwritten_count=overwritten_count,
             errors=errors
         )
 
@@ -417,10 +466,10 @@ class TransactionService:
         ignored = self.db.query(IgnoredTransaction.description).all()
         return {desc[0] for desc in ignored}
 
-    def _get_existing_transaction_signatures(self) -> set:
-        """Get set of existing transaction signatures (date+description+amount)."""
-        transactions = self.db.query(Transaction.date, Transaction.description, Transaction.amount).all()
-        return {self._make_transaction_signature(t[0], t[1], t[2]) for t in transactions}
+    def _get_existing_transaction_signatures(self) -> dict:
+        """Get dict mapping transaction signatures (date+description+amount) to transaction IDs."""
+        transactions = self.db.query(Transaction.id, Transaction.date, Transaction.description, Transaction.amount).all()
+        return {self._make_transaction_signature(t[1], t[2], t[3]): t[0] for t in transactions}
 
     def _make_transaction_signature(self, date: date, description: str, amount: float) -> str:
         """Create a signature for duplicate detection."""
@@ -442,6 +491,55 @@ class TransactionService:
         except Exception as e:
             # If it's a duplicate, that's fine - item is already ignored
             logger.debug(f"Could not add to ignore list (may already exist): {description}")
+
+    def _overwrite_transaction(
+        self,
+        existing_id: int,
+        item: PreviewTransactionItem,
+        final_description: str,
+        category_id: int,
+        source_file: str
+    ) -> Optional[Transaction]:
+        """
+        Overwrite an existing transaction with new data.
+
+        Preserves subscription_id and income_source_id to maintain relationships.
+
+        Args:
+            existing_id: ID of the existing transaction to overwrite
+            item: The preview item with new data
+            final_description: The final description (possibly edited)
+            category_id: The category ID to assign
+            source_file: The source file name
+
+        Returns:
+            Updated transaction or None if not found
+        """
+        transaction = self.db.query(Transaction).filter(Transaction.id == existing_id).first()
+        if not transaction:
+            logger.warning(f"Transaction {existing_id} not found for overwrite")
+            return None
+
+        # Update fields from the new data
+        transaction.date = item.date
+        transaction.description = final_description
+        transaction.amount = item.amount
+        transaction.transaction_type = item.transaction_type
+        transaction.original_category = item.original_category
+        transaction.source_type = item.source_type
+        transaction.source_file = source_file
+        transaction.updated_at = datetime.utcnow()
+
+        # Only update category if the transaction is NOT linked to a subscription
+        # Subscription-linked transactions must keep the Assinaturas category
+        if not transaction.subscription_id:
+            transaction.category_id = category_id
+
+        # PRESERVE: subscription_id, income_source_id (maintain relationships)
+        # These are intentionally NOT updated
+
+        logger.info(f"Overwrote transaction {existing_id}: {final_description}")
+        return transaction
 
     def _create_or_get_subscription(
         self,

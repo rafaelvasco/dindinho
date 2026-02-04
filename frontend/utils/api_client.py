@@ -91,6 +91,12 @@ class APIClient:
         )
         return self._handle_response(response)
 
+    def get_import_history(self) -> List[Dict]:
+        """Get history of imported CSV files."""
+        response = self.session.get(f"{self.base_url}/api/upload/import-history")
+        data = self._handle_response(response)
+        return data.get("imports", [])
+
     # Transaction endpoints
     def create_transaction(self, transaction_data: Dict) -> Dict:
         """Create a new transaction manually."""

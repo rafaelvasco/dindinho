@@ -2,7 +2,54 @@
 
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 from typing import Dict, List
+
+
+def show_import_history(api):
+    """Display the history of imported CSV files."""
+    try:
+        history = api.get_import_history()
+
+        if not history:
+            st.info("Nenhum arquivo CSV foi importado ainda.")
+            return
+
+        st.markdown("### Historico de Importacoes")
+
+        # Create DataFrame for display
+        df = pd.DataFrame(history)
+
+        # Format the data for display
+        df["source_type"] = df["source_type"].apply(
+            lambda x: "Cartao de Credito" if x == "credit_card" else "Extrato Bancario"
+        )
+
+        # Format import_date
+        df["import_date"] = pd.to_datetime(df["import_date"]).dt.strftime("%d/%m/%Y %H:%M")
+
+        # Rename columns for display
+        df = df.rename(columns={
+            "source_file": "Arquivo",
+            "source_type": "Tipo",
+            "transaction_count": "Transacoes",
+            "import_date": "Data de Importacao"
+        })
+
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Arquivo": st.column_config.TextColumn("Arquivo", width="medium"),
+                "Tipo": st.column_config.TextColumn("Tipo", width="small"),
+                "Transacoes": st.column_config.NumberColumn("Transacoes", width="small"),
+                "Data de Importacao": st.column_config.TextColumn("Data de Importacao", width="medium")
+            }
+        )
+
+    except Exception as e:
+        st.error(f"Erro ao carregar historico de importacoes: {str(e)}")
 
 
 def show_import_dialog(api):
@@ -142,6 +189,7 @@ def show_import_dialog(api):
         - 🔄 **Subscription**: Cria assinatura e importa.
         - 🚫 **Ignorar Desta Vez**: Ignora somente dessa vez.
         - ⛔ **Ignorar Sempre**: Ignora dessa vez e adiciona na lista de ignorados para todas as ocorrências futuras.
+        - ✏️ **Sobrescrever**: Sobrescreve transação duplicada existente com os novos dados.
         """)
 
         # Create DataFrame for display
@@ -158,15 +206,19 @@ def show_import_dialog(api):
 
         # Display items with action selectors
         for idx, item in enumerate(items):
-            # Determine default action
-            if item["is_ignored"] or item["is_duplicate"]:
-                default_action = "Skip (Ignored/Duplicate)"
+            # Determine default action and styling
+            if item["is_ignored"]:
+                default_action = "Skip (Ignored)"
                 disabled = True
-                bg_color = "#f0f0f0"
+                is_duplicate = False
+            elif item["is_duplicate"]:
+                default_action = "ignore_once"  # Default to keeping existing
+                disabled = False
+                is_duplicate = True
             else:
                 default_action = "import"
                 disabled = False
-                bg_color = "#ffffff"
+                is_duplicate = False
 
             # Create container for each item
             with st.container():
@@ -248,21 +300,34 @@ def show_import_dialog(api):
                     if item["is_ignored"]:
                         st.markdown("🚫 Ignored")
                     elif item["is_duplicate"]:
-                        st.markdown("♻️ Duplicate")
+                        st.markdown("⚠️ **Duplicate**")
                     else:
                         st.markdown("✅ New")
 
                 with col4:
                     if not disabled:
-                        action = st.selectbox(
-                            "Action",
-                            options=["import", "subscription", "ignore_once", "ignore_always"],
-                            format_func=lambda x: {
+                        # Different options for duplicates vs new items
+                        if is_duplicate:
+                            # For duplicates: only ignore or overwrite
+                            action_options = ["ignore_once", "overwrite"]
+                            action_labels = {
+                                "ignore_once": "🚫 Ignore (Keep Existing)",
+                                "overwrite": "✏️ Overwrite"
+                            }
+                        else:
+                            # For new items: full options
+                            action_options = ["import", "subscription", "ignore_once", "ignore_always"]
+                            action_labels = {
                                 "import": "📥 Import",
                                 "subscription": "🔄 Subscription",
                                 "ignore_once": "🚫 Ignore Once",
                                 "ignore_always": "⛔ Ignore Always"
-                            }[x],
+                            }
+
+                        action = st.selectbox(
+                            "Action",
+                            options=action_options,
+                            format_func=lambda x, labels=action_labels: labels[x],
                             key=f"action_{idx}",
                             label_visibility="collapsed"
                         )
@@ -327,6 +392,7 @@ def show_import_dialog(api):
                         ✅ **Importação Concluída!**
 
                         - ✅ Importados: {result['imported_count']}
+                        - ✏️ Sobrescritos: {result.get('overwritten_count', 0)}
                         - 🔄 Assinaturas Criadas: {result['subscriptions_created']}
                         - 🚫 Ignorados Uma Vez: {result['ignored_once_count']}
                         - ⛔ Adicionados à Lista: {result['ignored_always_count']}
@@ -373,4 +439,8 @@ def show_import_dialog(api):
                 st.rerun()
 
     else:
-        st.info("👆 Envie um arquivo CSV para começar")
+        st.info("Envie um arquivo CSV para comecar")
+
+    # Show import history section
+    st.markdown("---")
+    show_import_history(api)

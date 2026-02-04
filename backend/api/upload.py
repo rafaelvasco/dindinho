@@ -14,9 +14,13 @@ from backend.schemas.import_preview import (
     ImportPreviewResponse,
     ImportRequest,
     ImportResult,
-    IgnoredTransactionResponse
+    IgnoredTransactionResponse,
+    ImportHistoryResponse,
+    ImportHistoryItem
 )
 from backend.models.ignored_transaction import IgnoredTransaction
+from backend.models.transaction import Transaction
+from sqlalchemy import func
 
 logger = logging.getLogger(__name__)
 
@@ -192,3 +196,40 @@ async def remove_from_ignore_list(
     logger.info(f"Removed from ignore list: {description}")
 
     return {"message": f"Removed '{description}' from ignore list"}
+
+
+@router.get("/import-history", response_model=ImportHistoryResponse)
+async def get_import_history(db: Session = Depends(get_db)):
+    """
+    Get history of imported CSV files.
+
+    Returns a list of all imported CSV files with:
+    - Source file name
+    - Source type (credit_card or account_extract)
+    - Number of transactions imported
+    - Import date (earliest created_at for transactions from that file)
+    """
+    results = (
+        db.query(
+            Transaction.source_file,
+            Transaction.source_type,
+            func.count(Transaction.id).label("transaction_count"),
+            func.min(Transaction.created_at).label("import_date")
+        )
+        .filter(Transaction.source_file.isnot(None))
+        .group_by(Transaction.source_file, Transaction.source_type)
+        .order_by(func.min(Transaction.created_at).desc())
+        .all()
+    )
+
+    imports = [
+        ImportHistoryItem(
+            source_file=row.source_file,
+            source_type=row.source_type,
+            transaction_count=row.transaction_count,
+            import_date=row.import_date
+        )
+        for row in results
+    ]
+
+    return ImportHistoryResponse(imports=imports)

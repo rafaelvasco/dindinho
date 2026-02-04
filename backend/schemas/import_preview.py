@@ -1,8 +1,8 @@
 """Pydantic schemas for CSV import preview and import process."""
 
 from pydantic import BaseModel, Field
-from datetime import date as DateType
-from typing import Optional, Literal
+from datetime import date as DateType, datetime
+from typing import Optional, Literal, List
 
 
 class PreviewTransactionItem(BaseModel):
@@ -17,6 +17,7 @@ class PreviewTransactionItem(BaseModel):
     source_type: str = Field(..., description="Source type: 'credit_card' or 'account_extract'")
     is_ignored: bool = Field(default=False, description="Whether this item is in the ignore list")
     is_duplicate: bool = Field(default=False, description="Whether this item already exists in database")
+    existing_transaction_id: Optional[int] = Field(None, description="ID of existing transaction if duplicate")
     suggested_name: Optional[str] = Field(None, description="Suggested mapped name based on fuzzy matching")
 
 
@@ -35,14 +36,15 @@ class ItemAction(BaseModel):
     """Schema for user action on a single transaction item during import."""
 
     index: int = Field(..., description="Row index (matches PreviewTransactionItem.index)")
-    action: Literal["import", "ignore_once", "ignore_always", "subscription"] = Field(
+    action: Literal["import", "ignore_once", "ignore_always", "subscription", "overwrite"] = Field(
         ...,
         description=(
             "Action to take: "
             "'import' = import normally, "
             "'ignore_once' = skip this time only, "
             "'ignore_always' = add to ignore list and skip, "
-            "'subscription' = create subscription and import"
+            "'subscription' = create subscription and import, "
+            "'overwrite' = overwrite existing duplicate transaction"
         )
     )
     edited_description: Optional[str] = Field(
@@ -72,6 +74,7 @@ class ImportResult(BaseModel):
     ignored_once_count: int = Field(..., description="Number of items ignored this time")
     ignored_always_count: int = Field(..., description="Number of items added to ignore list")
     subscriptions_created: int = Field(..., description="Number of subscriptions created")
+    overwritten_count: int = Field(default=0, description="Number of transactions overwritten")
     errors: list[str] = Field(default_factory=list, description="List of error messages")
 
 
@@ -86,3 +89,18 @@ class IgnoredTransactionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ImportHistoryItem(BaseModel):
+    """Schema for a single import history item."""
+
+    source_file: str = Field(..., description="Name of the imported CSV file")
+    source_type: str = Field(..., description="Source type: 'credit_card' or 'account_extract'")
+    transaction_count: int = Field(..., description="Number of transactions imported from this file")
+    import_date: datetime = Field(..., description="Date and time when the file was imported")
+
+
+class ImportHistoryResponse(BaseModel):
+    """Schema for import history response."""
+
+    imports: List[ImportHistoryItem] = Field(..., description="List of imported files with metadata")
